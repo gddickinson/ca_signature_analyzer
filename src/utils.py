@@ -97,7 +97,9 @@ def estimate_snr(signal: np.ndarray, baseline_fraction: float = 0.1) -> float:
     Returns
     -------
     snr : float
-        Signal-to-noise ratio (linear, not dB)
+        Amplitude signal-to-noise ratio (linear, not dB):
+        (max - baseline mean) / baseline SD. Square it for the power ratio
+        that channel_capacity_shannon expects.
     """
     # Baseline from first portion
     n_baseline = int(len(signal) * baseline_fraction)

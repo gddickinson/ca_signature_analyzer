@@ -6,7 +6,9 @@ ODE-based simulation of plant Ca²⁺ dynamics including:
 - Plasma membrane channels and pumps
 - ER/vacuolar Ca²⁺ stores
 - InsP3 signaling
-- Ca²⁺ buffering
+
+Buffering is not modelled: ModelParameters.B_total and K_buffer (and
+Ca_vac_max) are defined but not used by the equations.
 """
 
 import numpy as np
