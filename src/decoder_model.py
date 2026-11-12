@@ -13,6 +13,9 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional
 from scipy.integrate import odeint
 
+# np.trapz was removed in NumPy 2.0 (renamed np.trapezoid); support both.
+_trapezoid = getattr(np, "trapezoid", None) or getattr(np, "trapz")
+
 
 @dataclass
 class CDPKParameters:
@@ -209,7 +212,7 @@ class CDPKDecoder:
         which relates to target phosphorylation.
         """
         activation = self.dynamic_activation(t, ca_trace)
-        return np.trapz(activation, t)
+        return _trapezoid(activation, t)
 
 
 class DecoderPanel:
