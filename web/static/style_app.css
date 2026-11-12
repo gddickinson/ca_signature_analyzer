@@ -1,0 +1,26 @@
+/* Project accents (chlorophyll green / calcium amber / cyan) and page styles for Ca2+ Signature Analyzer.
+   Shared theme: style.css. */
+:root { --accent:#7dff6a; --accent2:#ffcf3f; --accent3:#4fd1ff; --glow:rgba(125,255,106,.12); }
+button, .btn, .seg button.on { color:#061404; }
+.plot { width:100%; height:auto; display:block; font:11px var(--mono); }
+.plot text { fill:var(--mute); }
+.plot .axis-label { fill:var(--ink); font-size:12px; }
+.plot .grid-l { stroke:var(--line); stroke-width:.7; }
+.plot .ref-l { stroke:var(--mute); stroke-width:.9; stroke-dasharray:4 3; }
+.plot .axis-box { fill:none; stroke:var(--line); }
+.plot .heat-t { font-size:10px; fill:#05060c; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--mute); margin-top:6px; }
+.legend i { display:inline-block; width:14px; height:3px; margin-right:6px; vertical-align:middle; border-radius:2px; }
+.sim-badge { display:inline-block; font:600 11px var(--mono); letter-spacing:.08em; color:#1a1000; background:var(--accent2);
+  padding:1px 7px; border-radius:3px; vertical-align:middle; }
+.panels { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.params { max-height:540px; overflow-y:auto; padding-right:6px; }
+.params .ctl label { font-size:12px; }
+.params h3 { margin-top:14px; }
+td.num, th.num { text-align:right; font-family:var(--mono); white-space:nowrap; }
+.formula { font:14px var(--mono); color:var(--warn); }
+dl.metrics dt { font:600 14px var(--mono); color:var(--accent); margin-top:14px; }
+dl.metrics dd { margin:4px 0 0 0; max-width:80ch; }
+.unused { opacity:.55; }
+input[type=file] { margin-top:2px; }
+@media (max-width:760px) { .panels { grid-template-columns:1fr; } .params { max-height:none; } }

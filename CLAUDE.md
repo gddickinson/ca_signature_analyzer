@@ -13,10 +13,16 @@ George's global Claude preferences live in `~/.claude/CLAUDE.md` and apply to ev
 
 ## Project navigation
 
-See [`INTERFACE.md`](./INTERFACE.md) for a navigation map of this repository's modules and how they connect. Read `INTERFACE.md` before opening individual source files.
+See @INTERFACE.md ([`INTERFACE.md`](./INTERFACE.md)) for a navigation map of this repository's modules and how they connect. Read `INTERFACE.md` before opening individual source files.
 
 ## Working with Claude on this repo
 
 When directing Claude Code on this codebase, follow the global rules above, prefer making targeted edits via the `Edit` tool over rewriting whole files, and update `INTERFACE.md` whenever the project structure changes.
 
 Project-specific conventions, build instructions, and lab-specific notes should be added below as the project evolves.
+
+## Web interface
+
+`run_web.py` serves `web/` on port 8134; `scripts/build_static.py` builds the GitHub Pages site. The JS port in
+`web/static/cs_*.js` must stay in step with the Python: after changing `src/` analysis or model code, rerun
+`python scripts/make_cs_fixture.py` and `python -m pytest -q tests/`. Session history: SESSION_LOG.md.

@@ -122,6 +122,41 @@ labels = [sig.stimulus for sig in db.signatures]
 # ... continue analysis
 ```
 
+## Web interface and static site
+
+A browser interface with the same model and analyses, also published as a static site on GitHub Pages
+(https://gddickinson.github.io/ca_signature_analyzer/ once Pages is enabled):
+
+- **Model explorer**: CalciumDynamicsModel with every parameter that enters the equations on a slider; cytosolic,
+  ER and vacuolar Ca²⁺ and InsP3 update live, with the signature features.
+- **Analyse traces**: upload a CSV (time in s, then one [Ca²⁺] column per trace, nM or μM) or use simulated demo
+  traces from the model: signature features, bandwidth, SNR, Shannon capacity, binned entropy, the mutual
+  information matrix between traces and steady-state CDPK activation; metrics export as CSV.
+- **Signature tables**: the example database, a simulated table (7 stimuli × 5 intensities) or your own CSV:
+  summary statistics, pairwise discrimination, k-NN mutual information per feature and Random-Forest accuracy.
+- **Format & metrics**: the input formats and the definition of every number.
+
+On the static site everything runs in the browser in a JavaScript port of the Python (`web/static/cs_*.js`),
+checked by a node test against values written by the repo's code (`scripts/make_cs_fixture.py`): analyses agree to
+1e-9 or better, model trajectories agree with scipy's `odeint` to ~1e-6 relative. Only the scikit-learn estimators
+(k-NN mutual information, Random Forest) need the local app; they are shown precomputed for the built-in tables.
+Uploaded files are not sent anywhere on the static site.
+
+### Run the web app
+
+```bash
+pip install -r requirements.txt -r requirements-web.txt
+python run_web.py                    # http://127.0.0.1:8134 (local only)
+python -m pytest -q tests/           # includes tests/test_web.py and the node test of the JS port
+python scripts/build_static.py       # writes the static site to site/
+```
+
+| Model explorer | Trace analysis |
+|---|---|
+| ![Model explorer](docs/img/model.png) | ![Trace analysis on simulated demo traces](docs/img/analyse_demo.png) |
+| **Signature tables** | **Home** |
+| ![Signature tables, simulated set](docs/img/signatures_simulated.png) | ![Home page](docs/img/home.png) |
+
 ## Project Structure
 
 ```
@@ -282,7 +317,7 @@ The analyzer generates various output files in the `outputs/` directory:
 
 ## Testing
 
-Run unit tests (when available):
+Run the unit tests:
 
 ```bash
 python -m pytest tests/

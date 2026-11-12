@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ca²⁺ Signature Analyzer</title>
+<meta name="description" content="A Python toolkit for analyzing plant calcium signaling dynamics using information theory and biophysical modeling: model explorer, trace analysis and signature tables in the browser.">
+<link rel="icon" href="static/icon.svg">
+<link rel="stylesheet" href="static/style.css">
+<link rel="stylesheet" href="static/style_app.css">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<header class="top">
+  <a class="brand" href="#/"><span class="mark"></span>Ca²⁺ Signatures</a>
+  <nav class="groups" aria-label="Main">
+    <a href="#/model" data-nav="model">Model</a>
+    <a href="#/analyse" data-nav="analyse">Analyse traces</a>
+    <a href="#/signatures" data-nav="signatures">Signature tables</a>
+    <a href="#/metrics" data-nav="metrics">Format &amp; metrics</a>
+    <a href="#/about" data-nav="about">About</a>
+  </nav>
+  <div class="right"><a class="small mute" href="https://github.com/gddickinson/ca_signature_analyzer" target="_blank" rel="noopener">GitHub</a></div>
+</header>
+<main id="app" tabindex="-1"></main>
+<footer class="foot">Ca²⁺ Signature Analyzer · <a href="https://github.com/gddickinson/ca_signature_analyzer">source on GitHub</a> · <span id="mode"></span></footer>
+<script type="module" src="static/main.js"></script>
+</body>
+</html>
