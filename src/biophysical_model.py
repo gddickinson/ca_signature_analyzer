@@ -8,7 +8,7 @@ ODE-based simulation of plant Ca²⁺ dynamics including:
 - InsP3 signaling
 
 Buffering is not modelled: ModelParameters.B_total and K_buffer (and
-Ca_vac_max) are defined but not used by the equations.
+K_ER, Ca_vac_max) are defined but not used by the equations.
 """
 
 import numpy as np
