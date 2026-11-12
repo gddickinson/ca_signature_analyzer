@@ -9,7 +9,8 @@ const METRICS = [
   [r => r.bandwidth_hz, 'Bandwidth (95% power)', 'Hz'],
   [r => r.snr_amplitude, 'SNR (amplitude)', ''],
   [r => r.capacity_bits_per_s, 'Shannon capacity W·log₂(1+SNR²)', 'bit/s'],
-  [r => r.entropy_bits, 'Amplitude entropy', 'bit'],
+  [r => r.entropy_bits, 'Amplitude entropy (plug-in)', 'bit'],
+  [r => r.entropy_bits_mm, 'Amplitude entropy (Miller–Madow)', 'bit'],
 ];
 
 export function renderResults(host, res, { label, simulated }) {
@@ -27,9 +28,12 @@ export function renderResults(host, res, { label, simulated }) {
       repo's amplitude ratio; the capacity squares it to the power ratio Shannon–Hartley needs (see Format &amp; metrics).</p>
     <button id="mcsv" class="alt">Download metrics (CSV)</button>
     ${names.length > 1 ? `<h2>Mutual information between traces (bits)</h2>
-      <p class="small mute">Plug-in estimate after uniform binning into ${res.n_bins} bins (InformationAnalyzer.mutual_information_continuous);
-        the diagonal is each trace's binned entropy. Time points are treated as independent samples.</p>
-      <div class="scroll">${heatmap(res.mi.matrix, res.mi.names, res.mi.names, { title: 'mutual information' })}</div>` : ''}
+      <p class="small mute">Uniform binning into ${res.n_bins} bins (InformationAnalyzer.mutual_information_continuous); the
+        diagonal is each trace's binned entropy. Plug-in estimate and the Miller–Madow bias-corrected estimate (each entropy
+        + (occupied bins − 1)/(2N ln 2)); time points are treated as independent samples, so both are optimistic for
+        autocorrelated traces.</p>
+      <div class="two"><div><h3>Plug-in</h3><div class="scroll">${heatmap(res.mi.matrix, res.mi.names, res.mi.names, { title: 'mutual information, plug-in' })}</div></div>
+      <div><h3>Miller–Madow corrected</h3><div class="scroll">${heatmap(res.mi.matrix_mm, res.mi.names, res.mi.names, { title: 'mutual information, Miller-Madow' })}</div></div></div>` : ''}
     <h2>CDPK activation</h2>
     <p class="small mute">Default CDPK panel. Steady state (CDPKDecoder.steady_state_activation, [Ca]ⁿ / (K_dⁿ + [Ca]ⁿ)) at
       the trace's baseline and peak, and the dynamic activation along the trace (da/dt = k_off(([Ca]/K_d)ⁿ(1 − a) − a)):

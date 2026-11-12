@@ -99,7 +99,8 @@ def python_only(X, labels, classes, counts):
             r = SignatureDiscriminability.classification_accuracy(X, labels, classifier="random_forest")
             res["classification"] = {k: r[k] for k in ("accuracy_mean", "accuracy_std", "cv_scores",
                                                        "confusion_matrix", "n_classes", "n_samples",
-                                                       "information_bits", "max_information_bits")}
+                                                       "information_bits", "information_bits_miller_madow",
+                                                       "max_information_bits")}
         except Exception as e:  # noqa: BLE001
             res["classification_error"] = str(e)
     return res

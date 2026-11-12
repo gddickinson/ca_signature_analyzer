@@ -22,8 +22,19 @@ export function entropyDiscrete(x) {
   return s / LN2;
 }
 
-// sklearn.metrics.mutual_info_score (nats) on integer labels, then / ln 2 (mutual_information_discrete)
-export function mutualInformationDiscrete(x, y) {
+// Miller-Madow corrected entropy: H + (m - 1) / (2 N ln 2), m occupied bins (entropy_miller_madow)
+export const entropyMillerMadow = x => entropyDiscrete(x) + (new Set(x).size - 1) / (2 * x.length * LN2);
+
+// sklearn.metrics.mutual_info_score (nats) on integer labels, then / ln 2 (mutual_information_discrete);
+// mm = true adds the Miller-Madow correction (mx + my - mxy - 1) / (2 N ln 2)
+export function mutualInformationDiscrete(x, y, mm = false) {
+  const plug = miPlugIn(x, y);
+  if (!mm) return plug;
+  const mxy = new Set(x.map((v, i) => `${v},${y[i]}`)).size;
+  return plug + (new Set(x).size + new Set(y).size - mxy - 1) / (2 * x.length * LN2);
+}
+
+function miPlugIn(x, y) {
   const n = x.length, xi = new Map(), yi = new Map();
   [...new Set(x)].sort((a, b) => a - b).forEach((v, i) => xi.set(v, i));
   [...new Set(y)].sort((a, b) => a - b).forEach((v, i) => yi.set(v, i));
@@ -60,8 +71,8 @@ export function binUniform(x, nBins) {
   });
 }
 
-export const mutualInformationContinuous = (x, y, nBins = 10) =>
-  mutualInformationDiscrete(binUniform(x, nBins), binUniform(y, nBins));
+export const mutualInformationContinuous = (x, y, nBins = 10, mm = false) =>
+  mutualInformationDiscrete(binUniform(x, nBins), binUniform(y, nBins), mm);
 
 // Shannon-Hartley: C = W log2(1 + SNR), SNR a power ratio
 export const channelCapacityShannon = (bandwidth, snr) => bandwidth * Math.log2(1 + snr);

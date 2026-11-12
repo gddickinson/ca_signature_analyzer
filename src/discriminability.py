@@ -130,12 +130,20 @@ class SignatureDiscriminability:
             'n_samples': len(labels)
         }
         
-        # Calculate information from accuracy
-        # For N equally likely classes, uniform guessing gives 1/N accuracy
-        # Information = log2(N) × accuracy (simplified)
+        # Information transmitted: mutual information between true and
+        # predicted labels (the cross-validated confusion matrix), plug-in and
+        # Miller-Madow bias-corrected. Chance-level prediction gives ~0 bits.
+        try:
+            from .information_theory import InformationAnalyzer
+        except ImportError:
+            from information_theory import InformationAnalyzer
+        _, codes = np.unique(np.concatenate([np.asarray(labels), np.asarray(predictions)]),
+                             return_inverse=True)
+        true_c, pred_c = codes[:len(labels)], codes[len(labels):]
         n_classes = len(np.unique(labels))
-        max_info = np.log2(n_classes)
-        results['information_bits'] = max_info * results['accuracy_mean']
-        results['max_information_bits'] = max_info
+        results['information_bits'] = InformationAnalyzer.mutual_information_discrete(true_c, pred_c)
+        results['information_bits_miller_madow'] = InformationAnalyzer.mutual_information_discrete(
+            true_c, pred_c, bias_correction='miller_madow')
+        results['max_information_bits'] = np.log2(n_classes)
         
         return results

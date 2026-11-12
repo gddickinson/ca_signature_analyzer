@@ -163,7 +163,8 @@ def main():
             )
             
             print(f"    Classification accuracy: {results['accuracy_mean']:.3f} ± {results['accuracy_std']:.3f}")
-            print(f"    Information transmitted: {results['information_bits']:.3f} bits")
+            print(f"    Information transmitted (MI of confusion matrix): {results['information_bits']:.3f} bits "
+                  f"(Miller-Madow {results['information_bits_miller_madow']:.3f})")
             
             # Save confusion matrix
             SignaturePlotter.plot_confusion_matrix(
@@ -185,7 +186,8 @@ def main():
         
         print("\n  Information Flow:")
         for key, value in flow.items():
-            print(f"    {key}: {value:.3f} bits")
+            unit = "" if key == "information_preservation" else " bits"
+            print(f"    {key}: {value:.3f}{unit}")
         
         # Plot
         SignaturePlotter.plot_information_flow(

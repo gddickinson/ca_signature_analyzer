@@ -22,16 +22,24 @@ class InformationAnalyzer:
     """Calculate information-theoretic metrics for Ca²⁺ signaling."""
     
     @staticmethod
-    def mutual_information_discrete(x: np.ndarray, y: np.ndarray) -> float:
+    def mutual_information_discrete(x: np.ndarray, y: np.ndarray,
+                                    bias_correction: Optional[str] = None) -> float:
         """
         Calculate mutual information between discrete variables.
         
         I(X;Y) = H(X) + H(Y) - H(X,Y)
+
+        The plug-in (maximum-likelihood) estimate is biased upward for small
+        samples. bias_correction='miller_madow' applies the Miller-Madow
+        correction to each entropy, H + (m - 1) / (2 N ln 2) bits with m the
+        number of occupied bins (Miller 1955; Paninski 2003, Neural Comput
+        15:1191); that estimate can be slightly negative.
         
         Parameters
         ----------
         x, y : np.ndarray
             Discrete random variables (integer labels)
+        bias_correction : None or 'miller_madow'
             
         Returns
         -------
@@ -47,12 +55,28 @@ class InformationAnalyzer:
         
         # Convert nats to bits
         mi_bits = mi_nats / np.log(2)
-        
+
+        if bias_correction == 'miller_madow':
+            n = len(x)
+            mx, my = len(np.unique(x)), len(np.unique(y))
+            mxy = len(np.unique(np.column_stack([x, y]), axis=0))
+            mi_bits += (mx + my - mxy - 1) / (2 * n * np.log(2))
+        elif bias_correction is not None:
+            raise ValueError(f"Unknown bias_correction: {bias_correction}")
+
         return mi_bits
+
+    @staticmethod
+    def entropy_miller_madow(x: np.ndarray) -> float:
+        """Miller-Madow bias-corrected entropy in bits: H_plugin + (m - 1) / (2 N ln 2)."""
+        x = np.asarray(x)
+        m = len(np.unique(x, axis=0)) if x.ndim > 1 else len(np.unique(x))
+        return InformationAnalyzer.entropy_discrete(x) + (m - 1) / (2 * len(x) * np.log(2))
     
     @staticmethod
-    def mutual_information_continuous(x: np.ndarray, y: np.ndarray, 
-                                    n_bins: int = 10) -> float:
+    def mutual_information_continuous(x: np.ndarray, y: np.ndarray,
+                                    n_bins: int = 10,
+                                    bias_correction: Optional[str] = None) -> float:
         """
         Calculate mutual information between continuous variables.
         
@@ -77,7 +101,7 @@ class InformationAnalyzer:
         y_binned = discretizer.fit_transform(y.reshape(-1, 1)).astype(int).flatten()
         
         # Calculate MI
-        return InformationAnalyzer.mutual_information_discrete(x_binned, y_binned)
+        return InformationAnalyzer.mutual_information_discrete(x_binned, y_binned, bias_correction)
     
     @staticmethod
     def conditional_entropy(y: np.ndarray, x: np.ndarray) -> float:
@@ -265,6 +289,8 @@ class PathwayInformationFlow:
             raise ValueError("Need at least 2 stages for flow analysis")
         
         flow = {}
+        corrected = {}
+        first = None
         
         for i in range(len(self.stages) - 1):
             stage1_name = self.stage_names[i]
@@ -288,12 +314,17 @@ class PathwayInformationFlow:
                 data2 = pca.fit_transform(data2).flatten()
             else:
                 data2 = data2.flatten()
+            if first is None:
+                first = data1
             
             # Calculate MI
             if discretize:
                 mi = InformationAnalyzer.mutual_information_continuous(
                     data1, data2, n_bins=n_bins
                 )
+                corrected[f"miller_madow: {stage1_name} to {stage2_name}"] = \
+                    InformationAnalyzer.mutual_information_continuous(
+                        data1, data2, n_bins=n_bins, bias_correction='miller_madow')
             else:
                 # Use sklearn's continuous MI estimator
                 mi_nats = mutual_info_regression(
@@ -307,19 +338,22 @@ class PathwayInformationFlow:
         
         # Calculate total information preservation
         if len(flow) > 0:
-            # Information at start
+            # Information at start: the first stage binned exactly as for the MI
+            # (uniform bins on the same 1-D data)
             h_start = InformationAnalyzer.entropy_discrete(
-                KBinsDiscretizer(n_bins=n_bins, encode='ordinal')
-                .fit_transform(self.stages[0].reshape(-1, 1))
+                KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='uniform')
+                .fit_transform(first.reshape(-1, 1))
                 .astype(int).flatten()
             )
             
             # Information preserved at end
             mi_total = list(flow.values())[-1]
             
+            # A ratio (dimensionless), not bits
             flow['information_preservation'] = mi_total / h_start if h_start > 0 else 0
             flow['initial_entropy'] = h_start
             flow['final_mutual_information'] = mi_total
+            flow.update(corrected)
         
         return flow
 

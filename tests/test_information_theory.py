@@ -147,5 +147,48 @@ class TestCapacityAndLabels:
         assert list(codes) == [2, 0, 1, 0, 2]
 
 
+class TestEstimatorFixes:
+    """Regressions for the information estimators (see SESSION_LOG.md)."""
+
+    def test_flow_initial_entropy_uses_the_mi_binning(self):
+        """Four equiprobable stimuli carry log2(4) = 2 bits (quantile binning merged categories)."""
+        rng = np.random.default_rng(1)
+        flow = PathwayInformationFlow()
+        labels = np.repeat(["a", "b", "c", "d"], 5).reshape(-1, 1)
+        flow.add_stage("Stimulus", labels)
+        flow.add_stage("Features", rng.normal(size=(20, 3)))
+        out = flow.calculate_flow()
+        assert out["initial_entropy"] == pytest.approx(2.0)
+
+    def test_miller_madow_entropy(self):
+        x = np.array([0, 0, 1, 1])
+        expected = 1.0 + (2 - 1) / (2 * 4 * np.log(2))
+        assert InformationAnalyzer.entropy_miller_madow(x) == pytest.approx(expected)
+
+    def test_miller_madow_mi_reduces_bias(self):
+        """Independent variables: the plug-in MI is biased upward; Miller-Madow is much closer to 0."""
+        rng = np.random.default_rng(5)
+        plug, mm = [], []
+        for _ in range(20):
+            x, y = rng.integers(0, 6, 60), rng.integers(0, 6, 60)
+            plug.append(InformationAnalyzer.mutual_information_discrete(x, y))
+            mm.append(InformationAnalyzer.mutual_information_discrete(x, y, bias_correction="miller_madow"))
+        assert np.mean(plug) > 0.2
+        assert abs(np.mean(mm)) < 0.5 * np.mean(plug)
+
+    def test_classification_information_is_mi_of_confusion_matrix(self):
+        """Chance-level classification transmits ~0 bits (log2(N) x accuracy gave ~0.5 bits)."""
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import cross_val_predict
+        rng = np.random.default_rng(2)
+        sigs = rng.normal(size=(90, 3))
+        labels = np.repeat([0, 1, 2], 30)
+        res = SignatureDiscriminability.classification_accuracy(sigs, labels)
+        pred = cross_val_predict(RandomForestClassifier(n_estimators=100, random_state=42), sigs, labels, cv=5)
+        assert res["information_bits"] == pytest.approx(InformationAnalyzer.mutual_information_discrete(labels, pred))
+        assert res["information_bits"] < 0.2
+        assert res["information_bits_miller_madow"] < res["information_bits"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

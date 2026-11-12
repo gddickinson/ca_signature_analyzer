@@ -2,7 +2,7 @@
 // metrics, the binned mutual-information matrix, and signature-table parsing / summary / discrimination.
 // Output has the same shape as the Python API; cs_engine.test.mjs checks it against tests/fixtures/cs_fixture.json.
 import { extractFeatures, estimateBandwidth, estimateSnr, detectOscillations } from './cs_signal.js';
-import { entropyDiscrete, binUniform, mutualInformationContinuous, channelCapacityShannon, CDPKS, hill,
+import { entropyDiscrete, entropyMillerMadow, binUniform, mutualInformationContinuous, channelCapacityShannon, CDPKS, hill,
   dynamicActivation, trapezoid,
   pairwiseDiscrimination, featureVector, summaryStatistics, FEATURE_NAMES } from './cs_info.js';
 
@@ -60,7 +60,7 @@ export function analyseColumn(t, ca, nBins = 10) {
     features, bandwidth_hz: bandwidth, snr_amplitude: snr, snr_power: snrPower,
     capacity_bits_per_s: channelCapacityShannon(bandwidth, snrPower),
     oscillation: { oscillatory: osc, frequency: freq },
-    entropy_bits: entropyDiscrete(binUniform(ca, nBins)), max_entropy_bits: Math.log2(nBins),
+    entropy_bits: entropyDiscrete(binUniform(ca, nBins)), entropy_bits_mm: entropyMillerMadow(binUniform(ca, nBins)), max_entropy_bits: Math.log2(nBins),
     cdpk: CDPKS.map(c => { const a = dynamicActivation(t, ca, c); let mx = -Infinity, sm = 0; for (const v of a) { mx = Math.max(mx, v); sm += v; }
       return { name: c.name, K_d: c.K_d, n_Hill: c.n_Hill, k_off: c.k_off, peak_activation: mx, mean_activation: sm / a.length,
       integrated_activation: trapezoid(a, t), at_baseline: hill(features.baseline_ca, c.K_d, c.n_Hill), at_peak: hill(features.peak_amplitude, c.K_d, c.n_Hill) }; }),
@@ -75,11 +75,14 @@ export function analyseTraces(t, cols, nBins = 10, units = 'nM') {
   const f = UNIT_FACTOR[units], names = Object.keys(cols);
   const data = Object.fromEntries(names.map(k => [k, Array.from(cols[k], v => v * f)]));
   const columns = names.map(k => ({ name: k, ...analyseColumn(t, data[k], nBins) }));
-  const matrix = names.map(() => names.map(() => 0));
+  const matrix = names.map(() => names.map(() => 0)), mm = names.map(() => names.map(() => 0));
   names.forEach((a, i) => names.forEach((b, j) => {
-    if (j >= i) matrix[i][j] = matrix[j][i] = mutualInformationContinuous(data[a], data[b], nBins);
+    if (j >= i) {
+      matrix[i][j] = matrix[j][i] = mutualInformationContinuous(data[a], data[b], nBins);
+      mm[i][j] = mm[j][i] = mutualInformationContinuous(data[a], data[b], nBins, true);
+    }
   }));
-  return clean({ n_bins: nBins, units, columns, mi: { names, matrix } });
+  return clean({ n_bins: nBins, units, columns, mi: { names, matrix, matrix_mm: mm } });
 }
 
 // web.analysis.analyse_csv

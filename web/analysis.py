@@ -112,7 +112,9 @@ def analyse_column(t, ca, n_bins=10):
         osc, freq = utils.detect_oscillations(t, ca)
     snr_power = snr * snr
     capacity = InformationAnalyzer.channel_capacity_shannon(bandwidth, snr_power)
-    entropy = InformationAnalyzer.entropy_discrete(binned(ca, n_bins))
+    codes = binned(ca, n_bins)
+    entropy = InformationAnalyzer.entropy_discrete(codes)
+    entropy_mm = InformationAnalyzer.entropy_miller_madow(codes)
     cdpk = []
     for p in CDPKLibrary.get_default_cdpks():
         d = CDPKDecoder(p)
@@ -124,7 +126,7 @@ def analyse_column(t, ca, n_bins=10):
                      "at_peak": d.steady_state_activation(feats["peak_amplitude"])})
     return {"features": feats, "bandwidth_hz": bandwidth, "snr_amplitude": snr, "snr_power": snr_power,
             "capacity_bits_per_s": capacity, "oscillation": {"oscillatory": osc, "frequency": freq},
-            "entropy_bits": entropy, "max_entropy_bits": math.log2(n_bins), "cdpk": cdpk}
+            "entropy_bits": entropy, "entropy_bits_mm": entropy_mm, "max_entropy_bits": math.log2(n_bins), "cdpk": cdpk}
 
 
 def analyse_traces(t, cols, n_bins=10, units="nM"):
@@ -139,12 +141,15 @@ def analyse_traces(t, cols, n_bins=10, units="nM"):
     names = list(data)
     out = [{"name": k, **analyse_column(t, data[k], n_bins)} for k in names]
     mi = [[0.0] * len(names) for _ in names]
+    mm = [[0.0] * len(names) for _ in names]
     for i, a in enumerate(names):
         for j, b in enumerate(names):
             if j >= i:
-                v = InformationAnalyzer.mutual_information_continuous(data[a], data[b], n_bins=n_bins)
-                mi[i][j] = mi[j][i] = v
-    return clean({"n_bins": n_bins, "units": units, "columns": out, "mi": {"names": names, "matrix": mi}})
+                mi[i][j] = mi[j][i] = InformationAnalyzer.mutual_information_continuous(data[a], data[b], n_bins=n_bins)
+                mm[i][j] = mm[j][i] = InformationAnalyzer.mutual_information_continuous(
+                    data[a], data[b], n_bins=n_bins, bias_correction="miller_madow")
+    return clean({"n_bins": n_bins, "units": units, "columns": out,
+                  "mi": {"names": names, "matrix": mi, "matrix_mm": mm}})
 
 
 def analyse_csv(text, n_bins=10, units="nM"):

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { derivatives, stimulus, simulate, DEFAULTS } from './cs_model.js';
 import { extractFeatures, estimateBandwidth, estimateSnr, detectOscillations } from './cs_signal.js';
-import { entropyDiscrete, mutualInformationDiscrete, binUniform, mutualInformationContinuous } from './cs_info.js';
+import { entropyDiscrete, entropyMillerMadow, mutualInformationDiscrete, binUniform, mutualInformationContinuous } from './cs_info.js';
 import { analyseCsv, parseSignatureCsv, analyseTable } from './cs_analysis.js';
 
 const F = JSON.parse(readFileSync(new URL('../../tests/fixtures/cs_fixture.json', import.meta.url)));
@@ -71,14 +71,17 @@ ok(`features, bandwidth, SNR, oscillations equal Python on ${F.signal.length} tr
   }
 });
 
-ok(`entropy, binning and mutual information equal Python on ${F.info.length} data sets (1e-12)`, () => {
+ok(`entropy, binning and mutual information (plug-in and Miller-Madow) equal Python on ${F.info.length} data sets (1e-12)`, () => {
   for (const c of F.info) {
     if (c.kind === 'discrete') {
       close(entropyDiscrete(c.x), c.hx, 1e-12);
       close(mutualInformationDiscrete(c.x, c.y), c.mi, 1e-12);
+      close(entropyMillerMadow(c.x), c.hx_mm, 1e-12);
+      close(mutualInformationDiscrete(c.x, c.y, true), c.mi_mm, 1e-12);
     } else {
       assert.deepEqual(binUniform(c.x, c.n_bins), c.bins_x);
       close(mutualInformationContinuous(c.x, c.y, c.n_bins), c.mi, 1e-12);
+      close(mutualInformationContinuous(c.x, c.y, c.n_bins, true), c.mi_mm, 1e-12);
     }
   }
 });

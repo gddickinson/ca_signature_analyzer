@@ -390,7 +390,7 @@ class InformationCallbacksMixin:
             self.info_results_text.delete(1.0, tk.END)
             self.info_results_text.insert(tk.END, "INFORMATION FLOW:\n\n")
             for key, value in flow.items():
-                self.info_results_text.insert(tk.END, f"{key}: {value:.3f} bits\n")
+                unit = "" if key == "information_preservation" else " bits"; self.info_results_text.insert(tk.END, f"{key}: {value:.3f}{unit}\n")  # noqa: E702
 
             SignaturePlotter.plot_information_flow(
                 flow, output_path=str(self.output_dir / "information_flow.png")

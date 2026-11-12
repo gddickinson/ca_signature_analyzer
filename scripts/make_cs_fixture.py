@@ -104,13 +104,17 @@ def info_cases(rng):
         y = (x + rng.integers(0, ky, n)) % max(kx, ky)
         out.append({"kind": "discrete", "x": x.tolist(), "y": y.tolist(),
                     "hx": InformationAnalyzer.entropy_discrete(x),
-                    "mi": InformationAnalyzer.mutual_information_discrete(x, y)})
+                    "hx_mm": InformationAnalyzer.entropy_miller_madow(x),
+                    "mi": InformationAnalyzer.mutual_information_discrete(x, y),
+                    "mi_mm": InformationAnalyzer.mutual_information_discrete(x, y, bias_correction="miller_madow")})
     for n, nb in [(200, 10), (500, 7), (64, 3)]:
         x = rng.normal(size=n)
         y = x ** 2 + 0.3 * rng.normal(size=n)
         out.append({"kind": "continuous", "x": x.tolist(), "y": y.tolist(), "n_bins": nb,
                     "bins_x": analysis.binned(x, nb).tolist(),
-                    "mi": InformationAnalyzer.mutual_information_continuous(x, y, n_bins=nb)})
+                    "mi": InformationAnalyzer.mutual_information_continuous(x, y, n_bins=nb),
+                    "mi_mm": InformationAnalyzer.mutual_information_continuous(x, y, n_bins=nb,
+                                                                               bias_correction="miller_madow")})
     return out
 
 

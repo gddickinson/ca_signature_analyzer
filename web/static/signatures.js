@@ -74,8 +74,9 @@ function render(host, d) {
     const r = p.classification;
     h += `<p>SignatureDiscriminability.classification_accuracy, Random Forest (100 trees), 5-fold cross-validation:
       accuracy <b>${fmt(r.accuracy_mean)} ± ${fmt(r.accuracy_std)}</b> (SD over folds; ${r.n_samples} signatures, ${r.n_classes} classes).
-      The code's "information transmitted" is log₂(N) × accuracy = ${fmt(r.information_bits)} of ${fmt(r.max_information_bits)} bits
-      (a simplification noted in the code: it is not a mutual-information estimate).</p>
+      Information transmitted = mutual information between true and predicted stimulus (the confusion matrix):
+      <b>${fmt(r.information_bits)}</b> bits plug-in, <b>${fmt(r.information_bits_miller_madow)}</b> bits Miller–Madow corrected,
+      of at most ${fmt(r.max_information_bits)} bits.</p>
       <div class="scroll">${heatmap(r.confusion_matrix, d.classes, d.classes, { title: 'confusion matrix', digits: 0 })}</div>
       <p class="small mute">Confusion matrix: rows true stimulus, columns predicted.</p>`;
   } else h += `<p class="small mute">classification_accuracy could not run on this table (Python: ${esc(p.classification_error)}).</p>`;
