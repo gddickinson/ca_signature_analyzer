@@ -36,7 +36,7 @@ class CalciumSignature:
     
     # Oscillation features
     oscillatory: bool = False
-    frequency: Optional[float] = None  # Hz
+    frequency: Optional[float] = None  # Hz (events per second; 1 per min = 1/60 Hz)
     duty_cycle: Optional[float] = None
     spike_amplitude_cv: Optional[float] = None
     
@@ -237,7 +237,7 @@ def create_example_database() -> SignatureDatabase:
             duration=300,
             latency=60,
             oscillatory=True,
-            frequency=0.5,  # 0.5 Hz
+            frequency=0.5 / 60,  # 0.5 per min (2 min period), in Hz
             duty_cycle=0.3,
             reference="Allen et al. 2001, Plant Cell"
         ),
@@ -289,7 +289,7 @@ def create_example_database() -> SignatureDatabase:
             duration=400,
             latency=5,
             oscillatory=True,
-            frequency=0.2,
+            frequency=0.2 / 60,  # 0.2 per min (5 min period), in Hz
             reference="Ranf et al. 2011, Plant J"
         ),
         
@@ -323,7 +323,7 @@ def create_example_database() -> SignatureDatabase:
             duration=400,
             latency=30,
             oscillatory=True,
-            frequency=0.4,
+            frequency=0.4 / 60,  # 0.4 per min (2.5 min period), in Hz
             duty_cycle=0.25,
             reference="Pei et al. 2000, Nature"
         ),

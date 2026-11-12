@@ -42,3 +42,17 @@ def test_missing_oscillatory_is_false(tmp_path):
     db.load_from_csv(str(csv))
     assert db[0].oscillatory is False
     assert db[0].latency == pytest.approx(5.0)
+
+
+def test_example_frequencies_are_in_hz():
+    """Example oscillation frequencies were per-minute values labelled Hz (0.5 'Hz' = a 2 s period).
+    Stored in Hz: plant Ca2+ oscillations have periods of minutes, and the model's H2O2
+    oscillation (0.4 per minute = 0.4/60 Hz) matches the H2O2 example."""
+    db = create_example_database()
+    freqs = {s.stimulus: s.frequency for s in db.signatures if s.frequency is not None}
+    assert freqs["ABA"] == pytest.approx(0.5 / 60)
+    assert freqs["flg22"] == pytest.approx(0.2 / 60)
+    assert freqs["H2O2"] == pytest.approx(0.4 / 60)
+    loaded = SignatureDatabase()
+    loaded.load_from_csv(str(EXAMPLE))
+    assert {s.stimulus: s.frequency for s in loaded.signatures if s.frequency is not None} == pytest.approx(freqs)

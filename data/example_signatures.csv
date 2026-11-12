@@ -1,8 +1,8 @@
 signature_id,species,cell_type,stimulus,stimulus_concentration,baseline_ca,peak_amplitude,rise_time,decay_tau,duration,latency,oscillatory,frequency,duty_cycle,spike_amplitude_cv,wave_velocity,spatial_range,reference,notes
-ABA_GC_001,Arabidopsis thaliana,guard_cell,ABA,1e-05,100,800,20,40,300,60.0,True,0.5,0.3,,,,"Allen et al. 2001, Plant Cell",
+ABA_GC_001,Arabidopsis thaliana,guard_cell,ABA,1e-05,100,800,20,40,300,60.0,True,0.008333333333333333,0.3,,,,"Allen et al. 2001, Plant Cell",
 NaCl_ROOT_001,Arabidopsis thaliana,root_epidermal,NaCl,0.15,100,600,30,300,600,10.0,False,,,,,,"Knight et al. 1997, Plant J",
 TOUCH_LEAF_001,Arabidopsis thaliana,leaf_mesophyll,mechanical_touch,,100,1200,2,10,30,0.5,False,,,,,,"Legue et al. 1997, FEBS Lett",
-PAMP_MESO_001,Arabidopsis thaliana,leaf_mesophyll,flg22,1e-07,100,900,15,60,400,5.0,True,0.2,,,,,"Ranf et al. 2011, Plant J",
+PAMP_MESO_001,Arabidopsis thaliana,leaf_mesophyll,flg22,1e-07,100,900,15,60,400,5.0,True,0.0033333333333333335,,,,,"Ranf et al. 2011, Plant J",
 COLD_ROOT_001,Arabidopsis thaliana,root_hair,cold_shock,,100,700,5,120,180,2.0,False,,,,,,"Knight et al. 1996, Plant Cell",
-H2O2_GC_001,Arabidopsis thaliana,guard_cell,H2O2,1e-05,100,650,25,50,400,30.0,True,0.4,0.25,,,,"Pei et al. 2000, Nature",
+H2O2_GC_001,Arabidopsis thaliana,guard_cell,H2O2,1e-05,100,650,25,50,400,30.0,True,0.006666666666666667,0.25,,,,"Pei et al. 2000, Nature",
 GLU_ROOT_001,Arabidopsis thaliana,root_epidermal,glutamate,0.001,100,1000,3,20,60,1.0,False,,,,400.0,1000.0,"Toyota et al. 2018, Science",
