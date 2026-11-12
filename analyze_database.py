@@ -23,6 +23,12 @@ from visualization import SignaturePlotter, IntegratedReport
 import utils
 
 
+def encode_stimuli(labels):
+    """Sorted stimulus names and integer codes (sorted order = sklearn's confusion-matrix order)."""
+    names = sorted(set(labels))
+    return names, np.array([names.index(s) for s in labels])
+
+
 def main():
     parser = argparse.ArgumentParser(description='Analyze Ca²⁺ signature database')
     
@@ -134,18 +140,20 @@ def main():
         features = db.get_feature_matrix()
         stimuli_array = np.array(labels)
         
-        # Encode stimuli
-        unique_stimuli = list(set(labels))
-        labels_encoded = np.array([unique_stimuli.index(s) for s in labels])
+        # Encode stimuli (sorted, the order of the confusion-matrix rows)
+        unique_stimuli, labels_encoded = encode_stimuli(labels)
         
         # Calculate metrics
         print("  - Calculating mutual information")
-        metrics = InformationAnalyzer.estimate_signature_capacity(features, labels_encoded)
-        
-        print("\n  Information Metrics:")
-        print(f"    Max possible information: {metrics['max_information_bits']:.3f} bits")
-        print(f"    Avg mutual information: {metrics['avg_mutual_information_bits']:.3f} bits")
-        print(f"    Information efficiency: {metrics['information_efficiency']:.2%}")
+        try:
+            metrics = InformationAnalyzer.estimate_signature_capacity(features, labels_encoded)
+            print("\n  Information Metrics:")
+            print(f"    Max possible information: {metrics['max_information_bits']:.3f} bits")
+            print(f"    Avg mutual information: {metrics['avg_mutual_information_bits']:.3f} bits")
+            print(f"    Information efficiency: {metrics['information_efficiency']:.2%}")
+        except ValueError as e:
+            metrics = {}
+            print(f"    Skipped: {e}")
         
         # Classification accuracy
         if len(db) >= 10:

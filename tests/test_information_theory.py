@@ -128,5 +128,24 @@ class TestPathwayInformationFlow:
             assert text[key] == pytest.approx(codes[key])
 
 
+class TestCapacityAndLabels:
+    """Regressions found running analyze_database.py on the example database."""
+
+    def test_capacity_needs_two_signatures_per_stimulus(self):
+        """One signature per stimulus: a clear ValueError, not sklearn's 'Found array with 0 sample(s)'."""
+        sigs = np.arange(21, dtype=float).reshape(7, 3)
+        with pytest.raises(ValueError, match="at least 2 signatures per stimulus"):
+            InformationAnalyzer.estimate_signature_capacity(sigs, np.arange(7))
+
+    def test_cli_label_order_matches_confusion_matrix(self):
+        """analyze_database labels the confusion matrix in the sorted order sklearn uses for its rows."""
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        import analyze_database
+        labels = ["flg22", "ABA", "NaCl", "ABA", "flg22"]
+        names, codes = analyze_database.encode_stimuli(labels)
+        assert names == ["ABA", "NaCl", "flg22"]
+        assert list(codes) == [2, 0, 1, 0, 2]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

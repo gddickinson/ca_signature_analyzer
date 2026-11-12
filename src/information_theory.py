@@ -187,7 +187,11 @@ class InformationAnalyzer:
         metrics : Dict
             Dictionary of information metrics
         """
-        n_stimuli = len(np.unique(labels))
+        classes, counts = np.unique(labels, return_counts=True)
+        n_stimuli = len(classes)
+        if counts.min() < 2:
+            raise ValueError("estimate_signature_capacity needs at least 2 signatures per "
+                             "stimulus (k-nearest-neighbour MI estimator)")
         
         # Maximum possible information (uniform distribution)
         max_information = np.log2(n_stimuli)
