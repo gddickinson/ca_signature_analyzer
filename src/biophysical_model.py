@@ -245,7 +245,7 @@ class CalciumDynamicsModel:
         if initial_state is None:
             y0 = np.array([
                 100.0,    # Ca_cyt (nM) - resting level
-                50000.0,  # Ca_ER (nM) - ~500 μM
+                50000.0,  # Ca_ER (nM) - 50 μM
                 300000.0, # Ca_vac (nM) - ~300 μM  
                 10.0      # IP3 (nM) - basal
             ])
