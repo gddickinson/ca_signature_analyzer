@@ -122,6 +122,17 @@ labels = [sig.stimulus for sig in db.signatures]
 # ... continue analysis
 ```
 
+## Changes to results (2026-11-11)
+
+Four fixes change numbers by design (details in SESSION_LOG.md):
+- the ODE model now conserves Ca²⁺ between cytosol, ER and vacuole (fluxes in cytosolic units, stores change by
+  J / volume ratio) and has passive leaks, so a resting state exists near 100 nM; ABA no longer runs away to 72 μM;
+- CDPK dynamic activation follows the documented Hill curve (K_d, n) with k_off setting the speed, integrated stably
+  (it used to flip 0/1 every step);
+- example oscillation frequencies are stored in Hz (they were per-minute values labelled Hz);
+- information flow bins the initial entropy like the MI, classification "information" is the MI of the confusion
+  matrix, and a Miller–Madow bias-corrected MI is available and shown next to the plug-in estimate.
+
 ## Web interface and static site
 
 A browser interface with the same model and analyses, also published as a static site on GitHub Pages

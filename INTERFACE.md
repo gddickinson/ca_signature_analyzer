@@ -4,7 +4,7 @@
 
 ### `biophysical_model.py`
 - `ModelParameters` -- ODE model parameters (channel conductances, pump activities, etc.)
-- `CalciumDynamicsModel` -- ODE-based Ca2+ dynamics simulation
+- `CalciumDynamicsModel` -- ODE-based Ca2+ dynamics simulation (Ca2+-conserving store fluxes, passive leaks)
   - `simulate(stimulus_type, duration, dt, intensity)` -- run simulation (with input validation)
   - `extract_signature_features(t, ca_trace)` -- extract peak, rise time, decay tau, etc.
   - `VALID_STIMULI` -- class-level tuple of accepted stimulus names
@@ -12,17 +12,17 @@
 ### `decoder_model.py`
 - `CDPKParameters` -- CDPK kinetic parameters (Kd, Hill coeff, rates)
 - `CDPKLibrary` -- default library of 10 Arabidopsis CDPKs
-- `CDPKDecoder` -- single CDPK activation model (steady-state + dynamic)
+- `CDPKDecoder` -- single CDPK activation model (Hill steady state + Hill-type kinetics, exact step update)
 - `DecoderPanel` -- panel of multiple CDPKs; `analyze_signature()`, `get_response_matrix()`
 - `PhosphorylationTarget` -- target protein phosphorylation dynamics
 
 ### `information_theory.py`
-- `InformationAnalyzer` -- MI (discrete/continuous), entropy, channel capacity, signature capacity
+- `InformationAnalyzer` -- MI (discrete/continuous, optional `bias_correction='miller_madow'`), entropy, `entropy_miller_madow`, channel capacity, signature capacity
 - `PathwayInformationFlow` -- information flow between signaling stages (text label stages become integer codes)
 - re-exports `SignatureDiscriminability` from `discriminability.py`
 
 ### `discriminability.py`
-- `SignatureDiscriminability` -- pairwise discrimination (standardized class-mean distance), classification accuracy
+- `SignatureDiscriminability` -- pairwise discrimination (standardized class-mean distance), classification accuracy (information = MI of the confusion matrix)
 
 ### `signature_database.py`
 - `CalciumSignature` -- single signature record

@@ -25,30 +25,28 @@
    is 50 uM, not ~500 uM. `SignatureDiscriminability` moved to `src/discriminability.py` (500-line budget).
 7. Untracked committed `src/__pycache__/*.pyc`.
 
-### Needs George's decision (not changed: would change model / analysis results)
-- **Model mass balance** (`CalciumDynamicsModel.derivatives`): ER release adds `J/vol_ratio_ER` (10 J) to the
-  cytosol but removes `vol_ratio_ER * J` (0.1 J) from the ER; per cytosolic volume that is 10 J gained vs 0.01 J lost
-  (factor 1000); the vacuole likewise (factor 100 the other way). Conservative form: cytosol +-J, store -+J/vol_ratio.
-  Consequences: ABA and flg22 run away to 72 uM / 30 uM cytosolic Ca2+ in 600 s; glutamate drains the vacuole from
-  300 uM to 0.14 uM; with no stimulus Ca_cyt falls from 100 nM to < 1 nM (no resting steady state).
-- **CDPK dynamic activation** (`CDPKDecoder.dynamic_activation`): k_on = 1e7-1.2e8 "1/nM/s" looks like M^-1 s^-1
-  values (1e8 M^-1 s^-1 = 0.1 nM^-1 s^-1); with forward Euler at dt 0.1 s the step is ~1e9, so activation alternates
-  0, 1, 0, 1 (clipped). K_d and n_Hill do not enter the kinetics (implied K_d = k_off/k_on ~ 1e-6 nM). Affects
-  integrated activation, the decoder heatmap and the CDPK stage of the information flow. The web shows only the
-  Hill steady state.
-- **Example database frequencies**: ABA 0.5 Hz, flg22 0.2 Hz, H2O2 0.4 Hz are labelled Hz; the model's H2O2
-  oscillation uses 0.4/60 Hz (0.4 per minute), so the table values are probably per minute. Please check the sources.
-- **PathwayInformationFlow**: `initial_entropy` uses KBinsDiscretizer's default quantile binning while the MI uses
-  uniform binning (7 equiprobable stimuli give 2.52 bits instead of log2 7 = 2.81); `information_preservation` is a
-  ratio printed as "bits"; a multi-feature first stage is flattened with `reshape(-1, 1)`.
-- **classification_accuracy information_bits** = log2(N) x accuracy (flagged "simplified" in the code): chance
-  accuracy gives log2(N)/N bits, not 0. MI from the confusion matrix would be a proper estimate.
-- **Plug-in entropy / MI** with 10 x 10 bins on 7-35 signatures (information flow) is strongly biased upward; a
-  bias correction (Miller-Madow) or a shuffled-label baseline would make values interpretable.
-- **Features**: the baseline (median of the first 10%) includes the response for fast stimuli (touch 0.5 s,
-  glutamate 1 s, cold 2 s in a 600 s trace); latency is measured from t = 0, not stimulus onset; decay tau fits the
-  whole post-peak trace (negative or huge for non-decaying traces). Documented on the web Format & metrics page.
-
+### Needs George's decision (open)
+- **Pump capacity**: with Ca2+ conserved, NaCl and glutamate at intensity 1 (and ABA above ~1.3) bring in more Ca2+
+  than the PM Ca-ATPase can remove (V_PM_pump 40 nM/s; GLR + CNGC influx plus GLR-linked vacuolar release), so
+  cytosolic Ca2+ rises without a steady state (14-19 uM at 600 s). A calibration question (V_PM_pump,
+  V_vac_release, stimulus gains).
+- **Feature definitions**: the baseline (median of the first 10%) includes the response for fast stimuli; latency is
+  measured from t = 0; decay tau fits the whole post-peak trace. Documented on the web Format & metrics page.
+- The literature references of the example table were not re-checked.
 ### Notes
 - The shared venv lacks umap-learn; `analyze_database.py` was checked end to end with a PCA stand-in for UMAP.
 - Not pushed; the lead reviews and merges.
+
+## 2026-11-11 (later): model and statistics fixes requested by George (changes results by design)
+Each a "Fix ..." commit with regression tests that failed first; JS port and fixture updated; KIT checks rerun.
+1. Ca2+ conservation: fluxes in cytosolic-concentration units, stores change by -J_net / vol_ratio
+   (De Young & Keizer 1992; Li & Rinzel 1994); passive leaks V_PM_leak 8 nM/s, k_ER_leak 2.4e-4 /s,
+   k_vac_leak 3.33e-5 /s give a resting state near 100 nM / 50 uM / 300 uM. ABA (I = 1) peaks at 623 nM (was 72 uM).
+2. CDPK kinetics: da/dt = k_off (([Ca]/K_d)^n (1 - a) - a), exact step update (was forward Euler with k_on in
+   M^-1 s^-1 used as nM^-1 s^-1, flipping 0/1); k_on relabelled M^-1 s^-1 and unused (library k_on, k_off and K_d are
+   mutually inconsistent; K_d taken as authoritative). PhosphorylationTarget also integrated exactly. The web trace
+   analysis shows dynamic activation (peak, integral).
+3. Example frequencies (ABA 0.5, flg22 0.2, H2O2 0.4) were per minute; stored as Hz (/60) in code and CSV.
+4. Information flow initial entropy binned like the MI; preservation printed as a ratio; classification information
+   = MI of the confusion matrix (plug-in and Miller-Madow); `bias_correction='miller_madow'` for MI and
+   `entropy_miller_madow`; the web shows both estimates.
