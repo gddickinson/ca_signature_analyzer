@@ -117,30 +117,52 @@ class SignatureDatabase:
         self.signatures.append(signature)
     
     def load_from_csv(self, filepath: str):
-        """Load signatures from CSV file."""
+        """Load signatures from CSV file.
+
+        Empty cells (and missing optional columns) become None, or the
+        dataclass default for latency (5 s) and oscillatory (False).
+        """
         df = pd.read_csv(filepath)
-        
+
+        def cell(row, key, default=None):
+            value = row.get(key, default)
+            if value is None or (isinstance(value, float) and np.isnan(value)):
+                return default
+            return value
+
+        def number(row, key, default=None):
+            value = cell(row, key, default)
+            return float(value) if value is not None else None
+
+        def flag(value):
+            if isinstance(value, str):
+                return value.strip().lower() in ("true", "1", "yes")
+            return bool(value)
+
         for _, row in df.iterrows():
             sig = CalciumSignature(
                 signature_id=str(row['signature_id']),
                 species=row['species'],
                 cell_type=row['cell_type'],
                 stimulus=row['stimulus'],
-                stimulus_concentration=row.get('stimulus_concentration'),
+                stimulus_concentration=number(row, 'stimulus_concentration'),
                 baseline_ca=float(row['baseline_ca']),
                 peak_amplitude=float(row['peak_amplitude']),
                 rise_time=float(row['rise_time']),
                 decay_tau=float(row['decay_tau']),
                 duration=float(row['duration']),
-                latency=float(row.get('latency', 5.0)),
-                oscillatory=bool(row.get('oscillatory', False)),
-                frequency=row.get('frequency'),
-                duty_cycle=row.get('duty_cycle'),
-                reference=row.get('reference'),
-                notes=row.get('notes')
+                latency=number(row, 'latency', 5.0),
+                oscillatory=flag(cell(row, 'oscillatory', False)),
+                frequency=number(row, 'frequency'),
+                duty_cycle=number(row, 'duty_cycle'),
+                spike_amplitude_cv=number(row, 'spike_amplitude_cv'),
+                wave_velocity=number(row, 'wave_velocity'),
+                spatial_range=number(row, 'spatial_range'),
+                reference=cell(row, 'reference'),
+                notes=cell(row, 'notes')
             )
             self.add_signature(sig)
-    
+
     def save_to_csv(self, filepath: str):
         """Save signatures to CSV file."""
         data = [sig.to_dict() for sig in self.signatures]
