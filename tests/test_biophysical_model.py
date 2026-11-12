@@ -106,5 +106,45 @@ class TestExtractSignatureFeatures:
         assert features["duration"] == 0
 
 
+class TestFeatureRegressions:
+    """Regressions for extract_signature_features (see SESSION_LOG.md)."""
+
+    KEYS = {"baseline_ca", "peak_amplitude", "rise_time", "decay_tau", "duration",
+            "latency", "oscillatory", "frequency", "n_peaks"}
+
+    def test_flat_trace_has_all_keys(self):
+        """A flat trace returns the same keys as a responding one (the GUI reads 'oscillatory')."""
+        model = CalciumDynamicsModel()
+        t = np.linspace(0, 100, 200)
+        features = model.extract_signature_features(t, np.full_like(t, 100.0))
+        assert set(features) == self.KEYS
+        assert features["oscillatory"] is False and features["n_peaks"] == 0
+        assert features["frequency"] is None
+
+    def test_min_peak_spacing_is_5s(self):
+        """Peaks 5.0 s apart are all counted; peaks 4.9 s apart are not (5 // 0.1 == 49 samples was used)."""
+        model = CalciumDynamicsModel()
+        dt = 0.1
+        t = np.arange(0, 60, dt)
+        ca = np.full_like(t, 100.0)
+        for tp in (20.0, 25.0, 30.0):
+            ca += 900.0 * np.exp(-0.5 * ((t - tp) / 0.3) ** 2)
+        features = model.extract_signature_features(t, ca)
+        assert features["n_peaks"] == 3
+        assert features["frequency"] == pytest.approx(0.2, rel=1e-9)
+        close = np.full_like(t, 100.0)
+        for tp in (20.0, 24.9, 29.8):
+            close += 900.0 * np.exp(-0.5 * ((t - tp) / 0.3) ** 2)
+        assert model.extract_signature_features(t, close)["n_peaks"] < 3
+
+    def test_coarse_sampling_does_not_crash(self):
+        """With samples more than 5 s apart the peak spacing is one sample, not 0 (scipy raises on 0)."""
+        model = CalciumDynamicsModel()
+        t = np.arange(0, 600, 6.0)
+        ca = 100.0 + 500.0 * (np.sin(2 * np.pi * t / 60.0) > 0.9)
+        features = model.extract_signature_features(t, ca)
+        assert features["n_peaks"] >= 1
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

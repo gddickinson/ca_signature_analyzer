@@ -145,7 +145,7 @@ def detect_oscillations(t: np.ndarray, signal: np.ndarray,
     baseline = np.median(signal[:int(len(signal)*0.1)])
     peak_height = baseline + threshold * (np.max(signal) - baseline)
     
-    min_distance = int(5 / (t[1] - t[0]))  # At least 5s between peaks
+    min_distance = max(1, int(round(5.0 / (t[1] - t[0]))))  # At least 5s between peaks (>= 1 sample)
     peaks, _ = find_peaks(signal, height=peak_height, distance=min_distance)
     
     # Classify as oscillatory if >2 peaks

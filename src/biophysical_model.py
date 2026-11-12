@@ -285,8 +285,11 @@ class CalciumDynamicsModel:
                 'peak_amplitude': peak,
                 'rise_time': np.nan,
                 'decay_tau': np.nan,
-                'duration': 0,
-                'latency': np.nan
+                'duration': 0.0,
+                'latency': np.nan,
+                'oscillatory': False,
+                'frequency': None,
+                'n_peaks': 0
             }
         
         # Latency: time to first crossing
@@ -330,7 +333,9 @@ class CalciumDynamicsModel:
         
         # Detect oscillations
         from scipy.signal import find_peaks
-        peaks_idx, _ = find_peaks(ca_trace, height=threshold, distance=int(5//(t[1]-t[0])))
+        # At least 5 s between peaks (in samples; round, since 5 // 0.1 == 49.0 in floating point)
+        min_distance = max(1, int(round(5.0 / (t[1] - t[0]))))
+        peaks_idx, _ = find_peaks(ca_trace, height=threshold, distance=min_distance)
         
         oscillatory = len(peaks_idx) > 1
         frequency = None
