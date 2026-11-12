@@ -74,6 +74,20 @@ def _close(a, b, rtol, path="$", atol=1e-9):
             _close(x, y, rtol, f"{path}[{i}]", atol)
     elif isinstance(b, float) and not isinstance(b, bool):
         assert np.isclose(a, b, rtol=rtol, atol=atol), f"{path}: {a} vs {b}"
+    elif isinstance(b, str) and a != b and "," in b:
+        # generated CSV text: numbers formatted from floats can differ in the last digit on Linux
+        ra, rb = a.strip().splitlines(), b.strip().splitlines()
+        assert len(ra) == len(rb), path
+        for i, (la, lb) in enumerate(zip(ra, rb)):
+            ca, cb = la.split(","), lb.split(",")
+            assert len(ca) == len(cb), f"{path} line {i}"
+            for x, y in zip(ca, cb):
+                try:
+                    fx, fy = float(x), float(y)
+                except ValueError:
+                    assert x == y, f"{path} line {i}"
+                    continue
+                assert np.isclose(fx, fy, rtol=rtol, atol=atol), f"{path} line {i}: {x} vs {y}"
     else:
         assert a == b, path
 
