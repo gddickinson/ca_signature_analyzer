@@ -146,5 +146,45 @@ class TestFeatureRegressions:
         assert features["n_peaks"] >= 1
 
 
+class TestCalciumConservation:
+    """Store exchange must conserve Ca2+: fluxes are in cytosolic-concentration units, so
+    total = Ca_cyt + vol_ratio_ER * Ca_ER + vol_ratio_vac * Ca_vac changes only by PM fluxes."""
+
+    @staticmethod
+    def _total(p, y):
+        return y[0] + p.vol_ratio_ER * y[1] + p.vol_ratio_vac * y[2]
+
+    def test_store_exchange_conserves_total(self):
+        p = ModelParameters(V_PM_GLR=0.0, V_PM_CNGC=0.0, V_PM_pump=0.0, V_PM_leak=0.0)
+        model = CalciumDynamicsModel(p)
+        rng = np.random.default_rng(3)
+        for stim in model.VALID_STIMULI:
+            y = np.array([rng.uniform(50, 5000), rng.uniform(1e4, 1e5), rng.uniform(1e5, 5e5), rng.uniform(0, 300)])
+            d = model.derivatives(y, 100.0, stim, 1.0)
+            assert d[0] + p.vol_ratio_ER * d[1] + p.vol_ratio_vac * d[2] == pytest.approx(0.0, abs=1e-9)
+        t, sol = model.simulate("flg22", duration=300, dt=0.5)
+        tot = self._total(p, sol.T)
+        assert np.max(np.abs(tot - tot[0])) / tot[0] < 1e-6
+
+    def test_resting_steady_state(self):
+        """Without stimulus the model settles to a resting state near 100 nM (initial state is near rest)."""
+        model = CalciumDynamicsModel()
+        t, sol = model.simulate("ABA", duration=59, dt=0.5)   # ABA acts only after 60 s
+        assert 80 < sol[-1, 0] < 120
+        y = sol[-1].copy()
+        y[3] = 0.0
+        from scipy.optimize import fsolve
+        f = lambda z: model.derivatives(np.r_[z, 0.0], 0.0, "ABA", 0.0)[:3]
+        rest = fsolve(f, y[:3])
+        assert np.allclose(f(rest), 0, atol=1e-8)
+        assert 90 < rest[0] < 110 and 4e4 < rest[1] < 6e4 and 2.5e5 < rest[2] < 3.5e5
+
+    def test_aba_does_not_run_away(self):
+        model = CalciumDynamicsModel()
+        t, sol = model.simulate("ABA", duration=600)
+        assert sol[:, 0].max() < 2000
+        assert np.all(sol[:, :3] > 0)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

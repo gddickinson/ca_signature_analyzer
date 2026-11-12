@@ -10,6 +10,7 @@ export const DEFAULTS = {
   K_pump: 200.0, K_ER: 300.0, K_vac: 500.0,
   K_IP3: 100.0, n_IP3: 2.0, V_PLC: 50.0, k_IP3_deg: 0.5,
   B_total: 100000.0, K_buffer: 500.0, Ca_ER_max: 100000.0, Ca_vac_max: 500000.0,
+  V_PM_leak: 8.0, k_ER_leak: 2.4e-4, k_vac_leak: 3.33e-5,
   vol_ratio_ER: 0.1, vol_ratio_vac: 10.0,
 };
 export const STIMULI = ['ABA', 'NaCl', 'mechanical_touch', 'flg22', 'cold_shock', 'H2O2', 'glutamate'];
@@ -55,11 +56,17 @@ export function derivatives(y, t, type, intensity, p = DEFAULTS, out = new Array
   const J_PM_pump = p.V_PM_pump * (c2 / (k2 + c2));
   const J_ER_pump = p.V_ER_pump * (c2 / (k2 + c2));
   const J_vac_pump = p.V_vac_pump * (c2 / (k2 + c2));
+  const J_PM_leak = p.V_PM_leak;
+  const J_ER_leak = p.k_ER_leak * (Ca_ER - Ca_cyt);
+  const J_vac_leak = p.k_vac_leak * (Ca_vac - Ca_cyt);
   const J_IP3_synth = p.V_PLC * s.PLC_activity;
   const J_IP3_deg = p.k_IP3_deg * IP3;
-  out[0] = J_PM_in + J_ER_release / p.vol_ratio_ER + J_vac_release / p.vol_ratio_vac - J_PM_pump - J_ER_pump - J_vac_pump;
-  out[1] = p.vol_ratio_ER * (J_ER_pump - J_ER_release);
-  out[2] = p.vol_ratio_vac * (J_vac_pump - J_vac_release);
+  // fluxes in cytosolic-concentration units; stores change by -J_net / vol_ratio (total Ca2+ conserved)
+  const J_ER_net = J_ER_release + J_ER_leak - J_ER_pump;
+  const J_vac_net = J_vac_release + J_vac_leak - J_vac_pump;
+  out[0] = J_PM_in + J_PM_leak - J_PM_pump + J_ER_net + J_vac_net;
+  out[1] = -J_ER_net / p.vol_ratio_ER;
+  out[2] = -J_vac_net / p.vol_ratio_vac;
   out[3] = J_IP3_synth - J_IP3_deg;
   return out;
 }

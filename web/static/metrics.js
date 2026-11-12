@@ -65,16 +65,23 @@ route('metrics', () => {
   </dl>
 
   <h2>The biophysical model</h2>
-  <p>CalciumDynamicsModel.derivatives, all concentrations in nM, time in s; stimuli set the GLR, CNGC and PLC activities.</p>
+  <p>CalciumDynamicsModel.derivatives, all concentrations in nM, time in s; stimuli set the GLR, CNGC and PLC activities.
+    Fluxes J are in cytosolic-concentration units, so a store of relative volume v changes by J / v and store exchange
+    conserves total Ca²⁺ (Ca_cyt + v_ER·Ca_ER + v_vac·Ca_vac), as in De Young &amp; Keizer (1992) and Li &amp; Rinzel (1994).
+    Passive leaks balance the pumps at rest (Ca_cyt ≈ 100 nM).</p>
   <pre>J_PM_in       = V_PM_GLR·GLR + V_PM_CNGC·CNGC
 J_ER_release  = V_ER_release · IP3ⁿ/(K_IP3ⁿ + IP3ⁿ) · Ca_ER/Ca_ER_max
 J_vac_release = V_vac_release · Ca_vac/(K_vac + Ca_vac) · GLR
 J_pump,x      = V_x_pump · Ca_cyt²/(K_pump² + Ca_cyt²)          (x = PM, ER, vac)
-dCa_cyt/dt = J_PM_in + J_ER_release/vol_ratio_ER + J_vac_release/vol_ratio_vac − J_PM_pump − J_ER_pump − J_vac_pump
-dCa_ER/dt  = vol_ratio_ER · (J_ER_pump − J_ER_release)
-dCa_vac/dt = vol_ratio_vac · (J_vac_pump − J_vac_release)
+J_leak        = V_PM_leak;  k_ER_leak·(Ca_ER − Ca_cyt);  k_vac_leak·(Ca_vac − Ca_cyt)
+J_ER_net  = J_ER_release + J_ER_leak − J_ER_pump      J_vac_net = J_vac_release + J_vac_leak − J_vac_pump
+dCa_cyt/dt = J_PM_in + V_PM_leak − J_PM_pump + J_ER_net + J_vac_net
+dCa_ER/dt  = −J_ER_net / vol_ratio_ER
+dCa_vac/dt = −J_vac_net / vol_ratio_vac
 dIP3/dt    = V_PLC·PLC − k_IP3_deg·IP3</pre>
   <p class="small mute">Initial state: Ca_cyt 100 nM, Ca_ER 50 μM, Ca_vac 300 μM, IP3 10 nM. Buffering parameters (B_total, K_buffer)
-    and K_ER, Ca_vac_max are defined but not used by these equations.</p>`;
+    and K_ER, Ca_vac_max are defined but not used by these equations. With the default parameters a sustained influx
+    larger than the PM Ca-ATPase maximum (V_PM_pump = 40 nM/s), as for NaCl and glutamate at intensity 1 (GLR- and
+    CNGC-mediated influx plus GLR-linked vacuolar release), has no steady state: cytosolic Ca²⁺ keeps rising.</p>`;
   document.getElementById('demo').onclick = () => download('simulated_demo_traces.csv', demoCsv(), 'text/csv');
 });

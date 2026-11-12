@@ -7,6 +7,14 @@ ODE-based simulation of plant Ca²⁺ dynamics including:
 - ER/vacuolar Ca²⁺ stores
 - InsP3 signaling
 
+Fluxes J are in cytosolic-concentration units (nM/s referred to the cytosolic
+volume). A store of relative volume v = V_store / V_cyt therefore changes by
+J / v, so store exchange conserves total Ca2+ (Ca_cyt + v_ER Ca_ER + v_vac Ca_vac),
+as in De Young & Keizer (1992, PNAS 89:9895) and Li & Rinzel (1994, J Theor Biol
+166:461). Passive leaks (PM influx, ER and vacuolar leak, Li-Rinzel form
+k (Ca_store - Ca_cyt)) balance the pumps so that a resting state exists near the
+initial condition (Ca_cyt 100 nM, Ca_ER 50 uM, Ca_vac 300 uM).
+
 Buffering is not modelled: ModelParameters.B_total and K_buffer (and
 K_ER, Ca_vac_max) are defined but not used by the equations.
 """
@@ -53,6 +61,11 @@ class ModelParameters:
     Ca_ER_max: float = 100000.0
     Ca_vac_max: float = 500000.0
     
+    # Passive leaks (balance the pumps at rest, Ca_cyt 100 nM)
+    V_PM_leak: float = 8.0      # PM basal Ca influx (nM/s); = PM pump at 100 nM
+    k_ER_leak: float = 2.4e-4   # ER leak rate constant (1/s), flux k (Ca_ER - Ca_cyt)
+    k_vac_leak: float = 3.33e-5  # Vacuolar leak rate constant (1/s)
+
     # Volumes (relative)
     vol_ratio_ER: float = 0.1   # ER volume / cytosol volume
     vol_ratio_vac: float = 10.0  # Vacuole volume / cytosol volume
@@ -167,6 +180,11 @@ class CalciumDynamicsModel:
         # Vacuolar Ca2+ pump (uptake)
         J_vac_pump = p.V_vac_pump * (Ca_cyt**2 / (p.K_pump**2 + Ca_cyt**2))
         
+        # Passive leaks (cytosolic-concentration units)
+        J_PM_leak = p.V_PM_leak
+        J_ER_leak = p.k_ER_leak * (Ca_ER - Ca_cyt)
+        J_vac_leak = p.k_vac_leak * (Ca_vac - Ca_cyt)
+
         # InsP3 synthesis (PLC activity)
         J_IP3_synth = p.V_PLC * stim['PLC_activity']
         
@@ -175,19 +193,16 @@ class CalciumDynamicsModel:
         
         # --- ODEs ---
         
+        # Net store fluxes into the cytosol (cytosolic-concentration units)
+        J_ER_net = J_ER_release + J_ER_leak - J_ER_pump
+        J_vac_net = J_vac_release + J_vac_leak - J_vac_pump
+
         # Cytosolic Ca2+
-        dCa_cyt = (J_PM_in + 
-                   J_ER_release / p.vol_ratio_ER + 
-                   J_vac_release / p.vol_ratio_vac - 
-                   J_PM_pump - 
-                   J_ER_pump - 
-                   J_vac_pump)
-        
-        # ER Ca2+
-        dCa_ER = p.vol_ratio_ER * (J_ER_pump - J_ER_release)
-        
-        # Vacuolar Ca2+
-        dCa_vac = p.vol_ratio_vac * (J_vac_pump - J_vac_release)
+        dCa_cyt = J_PM_in + J_PM_leak - J_PM_pump + J_ER_net + J_vac_net
+
+        # Store Ca2+: the same amount, diluted in the store volume
+        dCa_ER = -J_ER_net / p.vol_ratio_ER
+        dCa_vac = -J_vac_net / p.vol_ratio_vac
         
         # InsP3
         dIP3 = J_IP3_synth - J_IP3_deg
