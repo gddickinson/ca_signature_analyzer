@@ -62,18 +62,18 @@ FIXTURE_PATH = ROOT / "tests" / "fixtures" / "cs_fixture.json"
 FIXTURE = json.loads(FIXTURE_PATH.read_text())
 
 
-def _close(a, b, rtol, path="$"):
+def _close(a, b, rtol, path="$", atol=1e-9):
     """Recursive comparison with a tolerance (CI runs on Linux, whose libm differs in the last digit)."""
     if isinstance(b, dict):
         assert set(a) == set(b), path
         for k in b:
-            _close(a[k], b[k], rtol, f"{path}.{k}")
+            _close(a[k], b[k], rtol, f"{path}.{k}", atol)
     elif isinstance(b, list):
         assert len(a) == len(b), path
         for i, (x, y) in enumerate(zip(a, b)):
-            _close(x, y, rtol, f"{path}[{i}]")
+            _close(x, y, rtol, f"{path}[{i}]", atol)
     elif isinstance(b, float) and not isinstance(b, bool):
-        assert np.isclose(a, b, rtol=rtol, atol=1e-9), f"{path}: {a} vs {b}"
+        assert np.isclose(a, b, rtol=rtol, atol=atol), f"{path}: {a} vs {b}"
     else:
         assert a == b, path
 
@@ -84,7 +84,10 @@ def test_fixture_is_current():
     import make_cs_fixture
     fresh = json.loads(json.dumps(make_cs_fixture.build()))
     for key, value in FIXTURE.items():
-        _close(fresh[key], value, 1e-6 if key in ("ode", "repo_simulate") else 1e-9, key)
+        # ODE trajectories: odeint's own absolute tolerance is ~1e-8, so values near zero
+        # differ by ~1e-9 between macOS and the Linux CI runner and may change sign; compare them with atol 1e-8.
+        atol = 1e-8 if key in ("ode", "repo_simulate") else 1e-9
+        _close(fresh[key], value, 1e-6, key, atol)
 
 
 @pytest.mark.parametrize("case", FIXTURE["csv"], ids=lambda c: c["name"])
