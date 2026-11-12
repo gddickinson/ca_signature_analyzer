@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from information_theory import InformationAnalyzer, SignatureDiscriminability
+from information_theory import (InformationAnalyzer, PathwayInformationFlow,
+                                SignatureDiscriminability)
 
 
 class TestInformationAnalyzer:
@@ -102,6 +103,29 @@ class TestSignatureDiscriminability:
         assert "confusion_matrix" in results
         # Well-separated classes should be classified with high accuracy
         assert results["accuracy_mean"] > 0.8
+
+
+class TestPathwayInformationFlow:
+    """Regression: analyze_database.py and the GUI pass stimulus names (strings) as the first stage."""
+
+    def _flow(self, stimulus_stage):
+        rng = np.random.default_rng(0)
+        codes = np.repeat(np.arange(4), 5)
+        features = codes[:, None] * 3.0 + rng.normal(size=(20, 3))
+        decoders = features @ rng.normal(size=(3, 5))
+        flow = PathwayInformationFlow()
+        flow.add_stage("Stimulus", stimulus_stage)
+        flow.add_stage("Ca_Signature", features)
+        flow.add_stage("CDPK_Response", decoders)
+        return flow.calculate_flow()
+
+    def test_text_labels_match_integer_codes(self):
+        names = np.array(["ABA", "NaCl", "cold_shock", "flg22"])
+        text = self._flow(np.repeat(names, 5).reshape(-1, 1))
+        codes = self._flow(np.repeat(np.arange(4), 5).reshape(-1, 1))
+        assert text.keys() == codes.keys()
+        for key in codes:
+            assert text[key] == pytest.approx(codes[key])
 
 
 if __name__ == "__main__":

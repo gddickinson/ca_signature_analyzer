@@ -236,8 +236,14 @@ class PathwayInformationFlow:
         name : str
             Stage name (e.g., 'Stimulus', 'Ca_signature', 'CDPK', 'Output')
         data : np.ndarray
-            Data for this stage [n_samples, n_features]
+            Data for this stage [n_samples, n_features]; non-numeric data
+            (labels) is converted to integer codes
         """
+        data = np.asarray(data)
+        if not np.issubdtype(data.dtype, np.number):
+            # Categorical stage (e.g. stimulus names): sorted integer codes
+            _, codes = np.unique(data, return_inverse=True)
+            data = codes.reshape(data.shape)
         self.stage_names.append(name)
         self.stages.append(data)
     
