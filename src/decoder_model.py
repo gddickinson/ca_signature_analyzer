@@ -24,7 +24,8 @@ class CDPKParameters:
     name: str
     K_d: float           # Ca2+ dissociation constant (nM)
     n_Hill: float        # Cooperativity (Hill coefficient)
-    k_on: float          # Activation rate (1/nM/s)
+    k_on: float          # Ca2+ association rate (1/M/s, literature units; not used by the
+                         # Hill-type kinetics below, where K_d and n_Hill set the steady state)
     k_off: float         # Deactivation rate (1/s)
     k_cat: float         # Catalytic rate for phosphorylation (1/s)
     
@@ -168,42 +169,38 @@ class CDPKDecoder:
     def dynamic_activation(self, t: np.ndarray, ca_trace: np.ndarray) -> np.ndarray:
         """
         Calculate dynamic CDPK activation with kinetics.
-        
-        Includes activation/deactivation kinetics, allowing frequency
-        decoding through temporal filtering.
-        
+
+        da/dt = k_act (1 - a) - k_off a, with k_act = k_off ([Ca]/K_d)^n_Hill,
+        so the steady state is the Hill activation of steady_state_activation
+        and k_off sets the time scale (relaxation rate k_act + k_off): the
+        temporal filter that allows frequency decoding. [Ca] is taken as
+        constant over each step and the step is integrated exactly
+        (exponential update), which is stable for any dt.
+
         Parameters
         ----------
         t : np.ndarray
             Time points (s)
         ca_trace : np.ndarray
             Ca²⁺ concentration over time (nM)
-            
+
         Returns
         -------
         activation : np.ndarray
             CDPK activation over time (0-1)
         """
         p = self.params
-        activation = np.zeros_like(ca_trace)
-        
-        # Initial condition
-        activation[0] = self.steady_state_activation(ca_trace[0])
-        
-        # Integrate activation kinetics
+        ca = np.asarray(ca_trace, dtype=float)
+        activation = np.zeros_like(ca)
+        activation[0] = self.steady_state_activation(ca[0])
         for i in range(1, len(t)):
             dt = t[i] - t[i-1]
-            ca = ca_trace[i]
-            
-            # Activation rate
-            d_activation = (p.k_on * ca * (1 - activation[i-1]) - 
-                          p.k_off * activation[i-1])
-            
-            activation[i] = activation[i-1] + d_activation * dt
-            activation[i] = np.clip(activation[i], 0, 1)
-        
+            k_act = p.k_off * (max(ca[i], 0.0) / p.K_d) ** p.n_Hill
+            rate = k_act + p.k_off
+            a_inf = k_act / rate
+            activation[i] = a_inf + (activation[i-1] - a_inf) * np.exp(-rate * dt)
         return activation
-    
+
     def calculate_integrated_activation(self, t: np.ndarray, ca_trace: np.ndarray) -> float:
         """
         Calculate time-integrated CDPK activation.
@@ -348,13 +345,16 @@ class PhosphorylationTarget:
             phos = np.zeros_like(t)
             phos[0] = 0.0
             
+            # Exact update for constant rates over each step (stable for any dt)
             for i in range(1, len(t)):
                 dt = t[i] - t[i-1]
                 k_phos = k_cat * cdpk_activation[i]
-                
-                dphos = k_phos * (1 - phos[i-1]) - self.k_dephos * phos[i-1]
-                phos[i] = phos[i-1] + dphos * dt
-                phos[i] = np.clip(phos[i], 0, 1)
+                rate = k_phos + self.k_dephos
+                if rate <= 0:
+                    phos[i] = phos[i-1]
+                    continue
+                p_inf = k_phos / rate
+                phos[i] = p_inf + (phos[i-1] - p_inf) * np.exp(-rate * dt)
             
             return phos
         

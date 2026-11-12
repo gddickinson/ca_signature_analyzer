@@ -4,7 +4,7 @@
 column, CalciumDynamicsModel.extract_signature_features, utils.estimate_bandwidth / estimate_snr /
 detect_oscillations, the Shannon entropy of the uniformly binned trace (KBinsDiscretizer + entropy_discrete, as in
 InformationAnalyzer.mutual_information_continuous), Shannon-Hartley capacity, and the steady-state (Hill) activation
-of the default CDPK panel at baseline and peak; across columns, the binned mutual information matrix.
+of the default CDPK panel at baseline and peak and its dynamic activation (DecoderPanel.analyze_signature metrics); across columns, the binned mutual information matrix.
 `simulate(...)` runs the biophysical model. The JS port (web/static/cs_*.js) mirrors this module and is tested
 against it (tests/fixtures/cs_fixture.json, scripts/make_cs_fixture.py).
 """
@@ -116,7 +116,10 @@ def analyse_column(t, ca, n_bins=10):
     cdpk = []
     for p in CDPKLibrary.get_default_cdpks():
         d = CDPKDecoder(p)
-        cdpk.append({"name": p.name, "K_d": p.K_d, "n_Hill": p.n_Hill,
+        act = d.dynamic_activation(t, ca)
+        cdpk.append({"name": p.name, "K_d": p.K_d, "n_Hill": p.n_Hill, "k_off": p.k_off,
+                     "peak_activation": float(np.max(act)), "mean_activation": float(np.mean(act)),
+                     "integrated_activation": d.calculate_integrated_activation(t, ca),
                      "at_baseline": d.steady_state_activation(feats["baseline_ca"]),
                      "at_peak": d.steady_state_activation(feats["peak_amplitude"])})
     return {"features": feats, "bandwidth_hz": bandwidth, "snr_amplitude": snr, "snr_power": snr_power,

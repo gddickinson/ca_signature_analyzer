@@ -3,6 +3,7 @@
 // Output has the same shape as the Python API; cs_engine.test.mjs checks it against tests/fixtures/cs_fixture.json.
 import { extractFeatures, estimateBandwidth, estimateSnr, detectOscillations } from './cs_signal.js';
 import { entropyDiscrete, binUniform, mutualInformationContinuous, channelCapacityShannon, CDPKS, hill,
+  dynamicActivation, trapezoid,
   pairwiseDiscrimination, featureVector, summaryStatistics, FEATURE_NAMES } from './cs_info.js';
 
 export const MIN_ROWS = 20;
@@ -60,8 +61,9 @@ export function analyseColumn(t, ca, nBins = 10) {
     capacity_bits_per_s: channelCapacityShannon(bandwidth, snrPower),
     oscillation: { oscillatory: osc, frequency: freq },
     entropy_bits: entropyDiscrete(binUniform(ca, nBins)), max_entropy_bits: Math.log2(nBins),
-    cdpk: CDPKS.map(c => ({ name: c.name, K_d: c.K_d, n_Hill: c.n_Hill,
-      at_baseline: hill(features.baseline_ca, c.K_d, c.n_Hill), at_peak: hill(features.peak_amplitude, c.K_d, c.n_Hill) })),
+    cdpk: CDPKS.map(c => { const a = dynamicActivation(t, ca, c); let mx = -Infinity, sm = 0; for (const v of a) { mx = Math.max(mx, v); sm += v; }
+      return { name: c.name, K_d: c.K_d, n_Hill: c.n_Hill, k_off: c.k_off, peak_activation: mx, mean_activation: sm / a.length,
+      integrated_activation: trapezoid(a, t), at_baseline: hill(features.baseline_ca, c.K_d, c.n_Hill), at_peak: hill(features.peak_amplitude, c.K_d, c.n_Hill) }; }),
   };
 }
 

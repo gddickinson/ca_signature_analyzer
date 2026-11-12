@@ -67,10 +67,22 @@ export const mutualInformationContinuous = (x, y, nBins = 10) =>
 export const channelCapacityShannon = (bandwidth, snr) => bandwidth * Math.log2(1 + snr);
 
 // Default CDPK panel (CDPKLibrary.get_default_cdpks: name, K_d nM, Hill n) and the Hill steady state
-export const CDPKS = [['CPK1', 2000, 3.0], ['CPK2', 1500, 2.8], ['CPK3', 500, 3.2], ['CPK4', 400, 3.0],
-  ['CPK5', 300, 3.5], ['CPK6', 350, 3.4], ['CPK21', 150, 2.5], ['CPK23', 180, 2.6], ['CPK28', 100, 2.0],
-  ['CPK32', 120, 2.2]].map(([name, K_d, n_Hill]) => ({ name, K_d, n_Hill }));
+export const CDPKS = [['CPK1', 2000, 3.0, 100], ['CPK2', 1500, 2.8, 80], ['CPK3', 500, 3.2, 50], ['CPK4', 400, 3.0, 45],
+  ['CPK5', 300, 3.5, 40], ['CPK6', 350, 3.4, 42], ['CPK21', 150, 2.5, 25], ['CPK23', 180, 2.6, 28], ['CPK28', 100, 2.0, 20],
+  ['CPK32', 120, 2.2, 22]].map(([name, K_d, n_Hill, k_off]) => ({ name, K_d, n_Hill, k_off }));
 export function hill(ca, K_d, n) { const cn = ca ** n; return cn / (K_d ** n + cn); }
+
+// CDPKDecoder.dynamic_activation: da/dt = k_act (1 - a) - k_off a, k_act = k_off ([Ca]/K_d)^n, exact step update
+export function dynamicActivation(t, ca, { K_d, n_Hill, k_off }) {
+  const a = new Float64Array(ca.length);
+  a[0] = hill(ca[0], K_d, n_Hill);
+  for (let i = 1; i < ca.length; i++) {
+    const dt = t[i] - t[i - 1], kAct = k_off * (Math.max(ca[i], 0.0) / K_d) ** n_Hill, rate = kAct + k_off, aInf = kAct / rate;
+    a[i] = aInf + (a[i - 1] - aInf) * Math.exp(-rate * dt);
+  }
+  return a;
+}
+export function trapezoid(y, t) { let s = 0; for (let i = 1; i < y.length; i++) s += (t[i] - t[i - 1]) * (y[i] + y[i - 1]) / 2; return s; }
 
 // SignatureDiscriminability.pairwise_discrimination: ||(mu1 - mu2) / ((sd1 + sd2) / 2)||, sd + 1e-10
 export function pairwiseDiscrimination(X, labels) {

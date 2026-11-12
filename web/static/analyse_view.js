@@ -30,9 +30,10 @@ export function renderResults(host, res, { label, simulated }) {
       <p class="small mute">Plug-in estimate after uniform binning into ${res.n_bins} bins (InformationAnalyzer.mutual_information_continuous);
         the diagonal is each trace's binned entropy. Time points are treated as independent samples.</p>
       <div class="scroll">${heatmap(res.mi.matrix, res.mi.names, res.mi.names, { title: 'mutual information' })}</div>` : ''}
-    <h2>CDPK activation (steady state, Hill)</h2>
-    <p class="small mute">CDPKDecoder.steady_state_activation = [Ca]ⁿ / (K_dⁿ + [Ca]ⁿ) at the trace's baseline and peak,
-      default CDPK panel (K_d in nM). Concentrations must be in nM for this to be meaningful.</p>
+    <h2>CDPK activation</h2>
+    <p class="small mute">Default CDPK panel. Steady state (CDPKDecoder.steady_state_activation, [Ca]ⁿ / (K_dⁿ + [Ca]ⁿ)) at
+      the trace's baseline and peak, and the dynamic activation along the trace (da/dt = k_off(([Ca]/K_d)ⁿ(1 − a) − a)):
+      its peak and its time integral (s). Concentrations must be in nM for this to be meaningful.</p>
     <label for="csel">Trace</label><select id="csel" style="max-width:320px">${names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select>
     <div class="scroll" id="cdpk"></div>`;
   const plot = () => {
@@ -43,9 +44,11 @@ export function renderResults(host, res, { label, simulated }) {
   const cdpk = () => {
     const c = res.columns[+host.querySelector('#csel').value];
     host.querySelector('#cdpk').innerHTML = `<table><thead><tr><th>CDPK</th><th class="num">K_d (nM)</th><th class="num">Hill n</th>
-      <th class="num">at baseline (${fmt(c.features.baseline_ca)} nM)</th><th class="num">at peak (${fmt(c.features.peak_amplitude)} nM)</th></tr></thead>
+      <th class="num">at baseline (${fmt(c.features.baseline_ca)} nM)</th><th class="num">at peak (${fmt(c.features.peak_amplitude)} nM)</th>
+      <th class="num">dynamic: peak</th><th class="num">dynamic: integral (s)</th></tr></thead>
       <tbody>${c.cdpk.map(d => `<tr><td>${esc(d.name)}</td><td class="num">${fmt(d.K_d)}</td><td class="num">${fmt(d.n_Hill)}</td>
-      <td class="num">${fmt(d.at_baseline)}</td><td class="num">${fmt(d.at_peak)}</td></tr>`).join('')}</tbody></table>`;
+      <td class="num">${fmt(d.at_baseline)}</td><td class="num">${fmt(d.at_peak)}</td>
+      <td class="num">${fmt(d.peak_activation)}</td><td class="num">${fmt(d.integrated_activation)}</td></tr>`).join('')}</tbody></table>`;
   };
   host.querySelector('#alog').onchange = plot;
   host.querySelector('#csel').onchange = cdpk;
