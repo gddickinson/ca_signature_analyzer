@@ -97,7 +97,10 @@ def test_fixture_is_current():
         # ODE trajectories: odeint's own absolute tolerance is ~1e-8, so values near zero
         # differ by ~1e-9 between macOS and the Linux CI runner and may change sign; compare them with atol 1e-8.
         atol = 1e-8 if key in ("ode", "repo_simulate") else 1e-9
-        _close(fresh[key], value, 1e-6, key, atol)
+        # "tables" are features of ODE-simulated signatures: the integrator's own tolerance (~1e-6 relative)
+        # shows up as a few-ppm difference between macOS and Linux, so allow rtol 1e-4 there
+        rtol = 1e-4 if key == "tables" else 1e-6
+        _close(fresh[key], value, rtol, key, atol)
 
 
 @pytest.mark.parametrize("case", FIXTURE["csv"], ids=lambda c: c["name"])
