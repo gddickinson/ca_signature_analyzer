@@ -55,6 +55,7 @@ def test_js_engine():
 
 # --- project-specific API tests ----------------------------------------------------------------------------------
 import json  # noqa: E402
+import re  # noqa: E402
 
 import numpy as np  # noqa: E402
 
